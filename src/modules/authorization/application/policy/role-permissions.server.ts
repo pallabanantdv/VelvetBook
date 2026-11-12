@@ -1,0 +1,111 @@
+import "server-only";
+
+import type { Permission } from "../../domain/permissions";
+import type { Role } from "../../domain/roles";
+import type { Membership } from "../../domain/membership";
+import type { OrganizationRoleName } from "../../domain/roles";
+
+export const MEMBERSHIP_ROLE_NAMES = {
+  owner: "organization_owner",
+  manager: "organization_manager",
+  staff: "staff",
+  member: "member",
+} as const satisfies Readonly<Record<Membership["role"], OrganizationRoleName>>;
+
+export type RolePermissionMatrix = {
+  readonly [R in Role as R["name"]]: readonly Extract<
+    Permission,
+    { scope: R["scope"] }
+  >[];
+};
+
+/** Proposed capability bundles only, never an authorization decision or bypass. */
+export const ROLE_PERMISSIONS = {
+  customer: [
+    { scope: "customer", resource: "discovery", action: "search" },
+    { scope: "customer", resource: "availability", action: "read" },
+    { scope: "customer", resource: "favorite", action: "read" },
+    { scope: "customer", resource: "favorite", action: "manage" },
+    { scope: "customer", resource: "negotiation", action: "read" },
+    { scope: "customer", resource: "negotiation", action: "offer" },
+    { scope: "customer", resource: "negotiation", action: "accept" },
+    { scope: "customer", resource: "review", action: "read" },
+    { scope: "customer", resource: "review", action: "create" },
+    { scope: "customer", resource: "conversation", action: "read" },
+    { scope: "customer", resource: "conversation", action: "send" },
+    { scope: "customer", resource: "booking", action: "reschedule" },
+    { scope: "customer", resource: "profile", action: "read" },
+    { scope: "customer", resource: "profile", action: "update" },
+    { scope: "customer", resource: "booking", action: "create" },
+    { scope: "customer", resource: "booking", action: "read" },
+    { scope: "customer", resource: "booking", action: "cancel" },
+    { scope: "customer", resource: "payment", action: "read" },
+  ],
+  organization_owner: [
+    { scope: "organization", resource: "negotiation", action: "read" },
+    { scope: "organization", resource: "negotiation", action: "offer" },
+    { scope: "organization", resource: "negotiation", action: "accept" },
+    { scope: "organization", resource: "conversation", action: "read" },
+    { scope: "organization", resource: "conversation", action: "send" },
+    { scope: "organization", resource: "deal", action: "read" },
+    { scope: "organization", resource: "deal", action: "manage" },
+    { scope: "organization", resource: "store", action: "create" },
+    { scope: "organization", resource: "onboarding", action: "read" },
+    { scope: "organization", resource: "onboarding", action: "update" },
+    { scope: "organization", resource: "onboarding", action: "submit" },
+    { scope: "organization", resource: "organization", action: "read" },
+    { scope: "organization", resource: "organization", action: "update" },
+    { scope: "organization", resource: "membership", action: "read" },
+    { scope: "organization", resource: "membership", action: "manage" },
+    { scope: "organization", resource: "store", action: "read" },
+    { scope: "organization", resource: "store", action: "update" },
+    { scope: "organization", resource: "catalog", action: "read" },
+    { scope: "organization", resource: "catalog", action: "manage" },
+    { scope: "organization", resource: "staff", action: "read" },
+    { scope: "organization", resource: "staff", action: "manage" },
+    { scope: "organization", resource: "booking", action: "read" },
+    { scope: "organization", resource: "booking", action: "manage" },
+    { scope: "organization", resource: "payment", action: "read" },
+    { scope: "organization", resource: "audit", action: "read" },
+  ],
+  organization_manager: [
+    { scope: "organization", resource: "negotiation", action: "read" },
+    { scope: "organization", resource: "negotiation", action: "offer" },
+    { scope: "organization", resource: "negotiation", action: "accept" },
+    { scope: "organization", resource: "conversation", action: "read" },
+    { scope: "organization", resource: "conversation", action: "send" },
+    { scope: "organization", resource: "deal", action: "read" },
+    { scope: "organization", resource: "deal", action: "manage" },
+    { scope: "organization", resource: "store", action: "create" },
+    { scope: "organization", resource: "onboarding", action: "read" },
+    { scope: "organization", resource: "onboarding", action: "update" },
+    { scope: "organization", resource: "onboarding", action: "submit" },
+    { scope: "organization", resource: "organization", action: "read" },
+    { scope: "organization", resource: "membership", action: "read" },
+    { scope: "organization", resource: "store", action: "read" },
+    { scope: "organization", resource: "store", action: "update" },
+    { scope: "organization", resource: "catalog", action: "read" },
+    { scope: "organization", resource: "catalog", action: "manage" },
+    { scope: "organization", resource: "staff", action: "read" },
+    { scope: "organization", resource: "staff", action: "manage" },
+    { scope: "organization", resource: "booking", action: "read" },
+    { scope: "organization", resource: "booking", action: "manage" },
+    { scope: "organization", resource: "payment", action: "read" },
+  ],
+  staff: [
+    { scope: "organization", resource: "store", action: "read" },
+    { scope: "organization", resource: "catalog", action: "read" },
+    { scope: "organization", resource: "booking", action: "read" },
+    { scope: "organization", resource: "booking", action: "update_assigned" },
+  ],
+  member: [],
+  platform_admin: [
+    { scope: "platform", resource: "onboarding", action: "read" },
+    { scope: "platform", resource: "onboarding", action: "review" },
+    { scope: "platform", resource: "organization", action: "read" },
+    { scope: "platform", resource: "organization", action: "suspend" },
+    { scope: "platform", resource: "user", action: "read" },
+    { scope: "platform", resource: "user", action: "disable" },
+    { scope: "platform", resource: "audit", action: "read" },
+  ],
+} as const satisfies RolePermissionMatrix;

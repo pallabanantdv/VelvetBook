@@ -1,36 +1,109 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+﻿# VelvetBook
 
-## Getting Started
+Next.js App Router, React, strict TypeScript, and npm. Existing UI, Tailwind,
+Next.js settings, and the `@/*` alias to `src/*` are preserved. Zod is available
+for future validation. PostgreSQL/Drizzle schema architecture is declared and proposed;
+runtime database integration is deferred.
+There are no database connections, API endpoints, or business services.
 
-First, run the development server:
+## Development
 
-```bash
+Use Node.js 20.9 or newer; prefer an actively supported LTS release.
+
+```sh
+npm ci
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000. Copy `.env.example` to `.env.local` if needed.
+No variables are required yet: `DATABASE_URL` is an empty placeholder for future
+server-side configuration. No validation or connection runs now. Never commit
+secrets or prefix database credentials with `NEXT_PUBLIC_`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Production: `npm run build`, then `npm start`. The preserved `next/font/google`
+configuration downloads Geist during builds and requires access to Google's font
+service.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Architecture
 
-## Learn More
+All layers live directly under `src/`. Empty directories have `.gitkeep` files.
 
-To learn more about Next.js, take a look at the following resources:
+```text
+src/
+  app/              App Router pages, layouts, global styles, route composition
+  modules/          Identity, authorization, and a reusable module scaffold
+  core/             Framework-independent domain types and contracts
+  infrastructure/   Future server-only external system adapters
+  db/               Proposed PostgreSQL/Drizzle schema organized by domain
+  shared/           Reusable UI and environment-neutral utilities
+  config/           Public and private application configuration
+  types/            Cross-cutting TypeScript types
+  tests/            Offline schema and security architecture checks
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Keep routing in `app`, features in `modules`, external system details in
+`infrastructure` and `db`, and `core` independent of Next.js and database
+implementations. Share environment-neutral code through `shared` and `types`.
+Avoid barrel exports that mix client and server modules.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+The backend follows a modular monolith with clean architecture. See the
+[module conventions and allowed imports](src/modules/README.md),
+[copyable scaffold](src/modules/_template/README.md), and
+[core contract ownership](src/core/README.md). ESLint enforces dependencies and
+local import cycles. `npm run test:architecture` verifies these rules.
 
-## Deploy on Vercel
+Phase 3 adds [database architecture and open questions](src/db/README.md), a
+[data dictionary](docs/database/data-dictionary.md), and a
+[proposed Mermaid ERD](docs/database/erd.md). `drizzle.config.ts` is schema-only:
+no credentials, client, migration, seed, or connection is configured.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Phase 4 adds identity/authentication and scoped authorization contracts. See the
+[security architecture](docs/security/architecture.md),
+[proposed permission matrix](docs/security/permission-matrix.md), and
+[future authorization test specifications](docs/security/authorization-test-specifications.md).
+No authentication/session or authorization handler is implemented.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Phase 5 defines [partner modules and onboarding architecture](docs/architecture/partner-modules.md):
+organizations, onboarding, stores, staff, services, products, business-photos,
+visibility and operating-hours. Workflow handlers, queries, uploads and new storage
+are deferred; structural validation schemas are provided at module boundaries.
+
+## Server boundaries
+
+App Router components are Server Components by default. Add `"use client"` only
+for interactive entry points. Every backend module must start with
+`import "server-only"`. Next.js rejects direct and transitive imports of these
+modules into Client Components at build time.
+
+ESLint requires this marker and prohibits `"use client"` in executable files under
+`src/db/`, `src/infrastructure/`, module `infrastructure/` directories, any
+`server/` directory, and `*.server.*` files. Pure domain/core contracts remain
+framework-independent and do not import the marker.
+Place backend code in those paths, including private environment configuration
+such as `src/config/env.server.ts` and future feature services under
+`src/modules/<feature>/server/`. Declaration files are exempt. Never pass secrets
+to Client Components through props or public configuration.
+
+The preserved `cacheComponents: true` setting uses the default Node.js runtime.
+The installed Next.js version disallows route-level `runtime` exports with Cache
+Components enabled, so none is added. Deploy to a Node.js environment.
+
+## Quality checks
+
+```sh
+npm run lint
+npm run typecheck
+npm run format:check
+npm run db:check
+npm run test:security
+npm run test:partner-contracts
+npm run build
+```
+
+Type checking generates Next.js route types first, including on fresh clones.
+ESLint uses Next.js Core Web Vitals and TypeScript rules plus server boundary
+rules. Prettier handles formatting; `npm run format` applies it. Architecture
+checks use Node's built-in test runner. `db:check` serializes the proposed schema
+in memory and checks its metadata without executing SQL or writing migrations.
+Connection pooling, migrations, environment validation, and database integration
+tests remain deferred.
