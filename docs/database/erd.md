@@ -15,6 +15,10 @@ requiring at least one line needs future behavior or additional constraints.
 
 ```mermaid
 erDiagram
+    users ||--o| customer_profiles : "optional customer profile (proposed)"
+    users ||--o{ favorites : "own favorites (proposed)"
+    stores ||--o{ favorites : "favorite store (proposed)"
+    bookings ||--o| reviews : "same customer composite FK (proposed)"
     users ||--o{ organization_members : "holds memberships (proposed)"
     organizations ||--o{ organization_members : "has members (proposed)"
     organizations ||--o{ stores : "owns stores (proposed)"
@@ -39,6 +43,30 @@ erDiagram
         varchar email UK "case-insensitive expression index"
         text display_name
         timestamptz disabled_at "nullable"
+    }
+    customer_profiles {
+        uuid id PK
+        uuid user_id FK,UK
+        text display_name
+        text locale
+        text timezone "nullable"
+        integer revision
+    }
+    favorites {
+        uuid id PK
+        uuid customer_user_id FK
+        uuid organization_id FK
+        uuid store_id FK
+    }
+    reviews {
+        uuid id PK
+        uuid organization_id FK
+        uuid store_id FK
+        uuid booking_id FK
+        uuid customer_user_id FK
+        integer rating "1 through 5"
+        text body
+        text status
     }
     organizations {
         uuid id PK
@@ -98,6 +126,11 @@ erDiagram
         timestamptz starts_at
         timestamptz ends_at
         numeric total_amount "14 digits, 2 decimals"
+        timestamptz hold_expires_at "required while pending"
+        integer revision
+        varchar idempotency_key "unique per customer"
+        varchar request_fingerprint
+        jsonb policy_snapshot
         char currency
     }
     booking_items {
@@ -113,6 +146,8 @@ erDiagram
         integer quantity
         numeric unit_price "14 digits, 2 decimals"
         integer duration_minutes "nullable"
+        timestamptz starts_at "service only"
+        timestamptz ends_at "service only"
     }
     deals {
         uuid id PK
@@ -134,7 +169,11 @@ erDiagram
         char currency FK "must match booking"
         text status
         varchar provider
-        text provider_payment_id "nullable, unique per provider"
+        varchar provider_account_ref
+        text refund_status "summary only, no refund ledger"
+        varchar request_fingerprint
+        integer revision
+        text provider_payment_id "nullable, unique per provider and account"
         varchar idempotency_key "unique within organization"
     }
     audit_logs {

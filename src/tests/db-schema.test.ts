@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import fs from "node:fs";
 import test from "node:test";
 import { generateDrizzleJson } from "drizzle-kit/api";
 import { getTableConfig, PgDialect } from "drizzle-orm/pg-core";
@@ -26,6 +27,40 @@ const expectedTables = [
   "favorites",
   "reviews",
 ];
+
+test("physical Mermaid ERD names match the proposed schema inventory", () => {
+  const erd = fs.readFileSync("docs/database/erd.md", "utf8");
+  const declared = [...erd.matchAll(/^ {4}([a-z_]+) \{$/gm)].map(
+    (match) => match[1],
+  );
+  assert.deepEqual(declared.sort(), [...expectedTables].sort());
+});
+
+test("review ownership and request idempotency are backed by composite constraints", () => {
+  const review = getTableConfig(schema.reviews);
+  const owner = review.foreignKeys.find(
+    (fk) => fk.getName() === "reviews_booking_customer_fk",
+  );
+  assert.ok(owner);
+  assert.deepEqual(names(owner.reference().columns), [
+    "organization_id",
+    "store_id",
+    "booking_id",
+    "customer_user_id",
+  ]);
+  assert.deepEqual(names(owner.reference().foreignColumns), [
+    "organization_id",
+    "store_id",
+    "id",
+    "customer_user_id",
+  ]);
+  const booking = getTableConfig(schema.bookings);
+  assert.ok(
+    booking.uniqueConstraints.some((constraint) =>
+      same(names(constraint.columns), ["customer_user_id", "idempotency_key"]),
+    ),
+  );
+});
 
 test("Drizzle Kit serializes exactly the proposed tables without credentials or a connection", () => {
   assert.equal(config.dialect, "postgresql");

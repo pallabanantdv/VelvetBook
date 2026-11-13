@@ -104,6 +104,8 @@ export const dependencyDirection = {
     const source = location(file, root);
     const owner = moduleLocation(source);
     const isCore = source.startsWith("src/core/");
+    const isConfig = source.startsWith("src/config/");
+    const isShared = source.startsWith("src/shared/");
     const allowed = {
       domain: ["domain"],
       application: ["application", "domain"],
@@ -116,6 +118,16 @@ export const dependencyDirection = {
       const destination = moduleLocation(target);
       let valid = true;
       if (isCore) valid = target.startsWith("src/core/");
+      if (isConfig || isShared) {
+        valid =
+          target.startsWith("src/core/") ||
+          target.startsWith(isConfig ? "src/config/" : "src/shared/") ||
+          specifier === "server-only" ||
+          (specifier === "zod" &&
+            (isConfig ||
+              (source.startsWith("src/shared/validation/") &&
+                source.endsWith(".server.ts"))));
+      }
       if (owner) {
         if (target.startsWith("src/core/")) valid = true;
         else if (destination?.name === owner.name)
@@ -180,7 +192,8 @@ export const dependencyDirection = {
     function expression(node, argument) {
       if (argument?.type === "Literal" && typeof argument.value === "string")
         check(node, argument.value);
-      else if (owner || isCore) context.report({ node, messageId: "dynamic" });
+      else if (owner || isCore || isConfig || isShared)
+        context.report({ node, messageId: "dynamic" });
     }
     return {
       ImportDeclaration: declaration,

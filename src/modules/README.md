@@ -77,3 +77,13 @@ Phase 5 adds the nine [partner modules](../../docs/architecture/partner-modules.
 and dependency/lifecycle diagrams. `presentation/validation.server.ts` may import
 Zod for structural validation; domain/application remain package-independent.
 Public exports remain type-only.
+
+Phases 6/7 add [customer/booking architecture](../../docs/architecture/customer-booking-modules.md)
+and [external integration architecture](../../docs/architecture/external-integrations.md).
+Integration modules provide server-only ports and empty adapters; no SDK/provider
+is selected and domain code remains package-independent.
+
+Phase 8 adds [centralized admin contracts](../../docs/architecture/centralized-admin.md).
+Admin owns shared platform operation/control contracts and imports none of its
+consumers. Approval coordination depends one-way on onboarding public types;
+reports and audit access require explicit verified platform data scope.

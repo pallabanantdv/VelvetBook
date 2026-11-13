@@ -45,9 +45,7 @@ export interface OpeningHoursSourcePort {
   ): Promise<Result<OperatingHours, RepositoryFailure>>;
 }
 export interface StaffScheduleSourcePort {
-  load(
-    scope: AvailabilityScope,
-  ): Promise<
+  load(scope: AvailabilityScope): Promise<
     Result<
       {
         readonly assignments: readonly StaffAssignment[];

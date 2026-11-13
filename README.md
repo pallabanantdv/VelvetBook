@@ -6,6 +6,12 @@ for future validation. PostgreSQL/Drizzle schema architecture is declared and pr
 runtime database integration is deferred.
 There are no database connections, API endpoints, or business services.
 
+The [final architecture audit](docs/architecture/audit-results.md) indexes the
+complete [project tree](docs/architecture/project-tree.md), editable system/domain
+diagrams, actual module dependencies and the module-by-module
+[future API roadmap](docs/architecture/future-api-roadmap.md). It distinguishes
+existing contracts from runtime controls and lists unresolved implementation gates.
+
 ## Development
 
 Use Node.js 20.9 or newer; prefer an actively supported LTS release.
@@ -68,6 +74,20 @@ organizations, onboarding, stores, staff, services, products, business-photos,
 visibility and operating-hours. Workflow handlers, queries, uploads and new storage
 are deferred; structural validation schemas are provided at module boundaries.
 
+Phase 6 adds [customer/booking contracts and concurrency diagrams](docs/architecture/customer-booking-modules.md)
+for customers, discovery, favorites, availability, bookings, deals, negotiation,
+reviews and messaging. Phase 7 adds [external integration architecture](docs/architecture/external-integrations.md)
+for payments, refunds, notifications, file-storage, maps, email, webhooks and domain-events.
+Both phases remain architecture-only; no live integration or booking/payment
+workflow is implemented. The proposed database ERD/dictionary includes their
+declared schema changes and explicitly lists deferred storage.
+
+Phase 8 adds [centralized admin architecture](docs/architecture/centralized-admin.md)
+for admin, organization-approvals, user-management, moderation, reports,
+platform-settings and audit-logs. Platform-only contracts require bounded verified
+scope; sensitive actions require independent approval and audit evidence. No admin
+operation, query, endpoint or dashboard is implemented.
+
 ## Server boundaries
 
 App Router components are Server Components by default. Add `"use client"` only
@@ -93,10 +113,13 @@ Components enabled, so none is added. Deploy to a Node.js environment.
 ```sh
 npm run lint
 npm run typecheck
+npm test
 npm run format:check
 npm run db:check
 npm run test:security
 npm run test:partner-contracts
+npm run test:integrations
+npm run test:admin-contracts
 npm run build
 ```
 
@@ -105,5 +128,12 @@ ESLint uses Next.js Core Web Vitals and TypeScript rules plus server boundary
 rules. Prettier handles formatting; `npm run format` applies it. Architecture
 checks use Node's built-in test runner. `db:check` serializes the proposed schema
 in memory and checks its metadata without executing SQL or writing migrations.
-Connection pooling, migrations, environment validation, and database integration
-tests remain deferred.
+Connection pooling, migrations and database integration tests remain deferred.
+
+Phase 9 adds [shared backend infrastructure](docs/architecture/shared-backend-infrastructure.md):
+typed errors, future JSON response contracts, sanitized error mapping, structured
+logging, explicit server environment validation, transaction/pagination ports and
+health/telemetry contracts. No routes, connections or concrete adapters are added.
+`npm test` discovers all contract and architecture suites using the existing Node
+runner and tsx loader. See the [testing strategy](docs/testing-strategy.md) for
+current verification and future integration, security and end-to-end coverage.

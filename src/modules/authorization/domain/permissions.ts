@@ -110,23 +110,44 @@ export type OrganizationPermission =
 export type PlatformPermission =
   | {
       readonly scope: "platform";
+      readonly resource: "admin";
+      readonly action: "read";
+    }
+  | {
+      readonly scope: "platform";
+      readonly resource: "moderation";
+      readonly action: "read" | "decide";
+    }
+  | {
+      readonly scope: "platform";
+      readonly resource: "report";
+      readonly action: "read" | "export";
+    }
+  | {
+      readonly scope: "platform";
+      readonly resource: "platform_setting";
+      readonly action: "read" | "propose" | "approve" | "apply";
+    }
+  | {
+      readonly scope: "platform";
       readonly resource: "onboarding";
       readonly action: "read" | "review";
     }
   | {
       readonly scope: "platform";
       readonly resource: "organization";
-      readonly action: "read" | "suspend";
+      readonly action: "read" | "suspend" | "restore";
     }
   | {
       readonly scope: "platform";
       readonly resource: "user";
-      readonly action: "read" | "disable";
+      readonly action:
+        "read" | "disable" | "restore" | "revoke_sessions" | "request_recovery";
     }
   | {
       readonly scope: "platform";
       readonly resource: "audit";
-      readonly action: "read";
+      readonly action: "read" | "export";
     };
 
 export type Permission =

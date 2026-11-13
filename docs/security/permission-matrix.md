@@ -1,5 +1,39 @@
 # Proposed permission matrix
 
+## Phase 8 platform-only extensions
+
+All organization/customer roles are denied these capabilities. A separately
+verified platform_admin grant is only a candidate capability: new admin ports
+require exact-action AdminOperationContext and bounded server-verified scope.
+Sensitive operations also require fresh reauthentication, independent approval,
+matching request fingerprint and prepared durable audit intent.
+
+| Platform resource.action                                 | Required scope/controls                                                 |
+| -------------------------------------------------------- | ----------------------------------------------------------------------- |
+| admin.read                                               | Verified operation, no implicit data access                             |
+| onboarding.read                                          | Explicit organization/submission selection                              |
+| onboarding.review                                        | Sensitive context, no self-review, submission/evidence revision         |
+| organization.read                                        | Explicit organization selection                                         |
+| organization.suspend, restore                            | Sensitive context, impact and revision checks                           |
+| user.read                                                | Explicit verified user set, minimized account projection                |
+| user.disable, restore, revoke_sessions, request_recovery | Sensitive context, self/privileged/last-admin checks                    |
+| moderation.read                                          | Explicit target tenants and redacted evidence                           |
+| moderation.decide                                        | Sensitive context, policy/evidence revision, source lifecycle checks    |
+| report.read                                              | Aggregate-only, bounded tenant set or platform_activity area            |
+| report.export                                            | Sensitive context, private expiring export, matching scope fingerprint  |
+| platform_setting.read                                    | Platform settings area, closed nonsecret registry                       |
+| platform_setting.propose, approve                        | Prepared-action contexts, audit and reauthentication; no effect applied |
+| platform_setting.apply                                   | Sensitive context, independent approval and revision checks             |
+| audit.read                                               | Explicit tenant set or platform-only audit area, access audited         |
+| audit.export                                             | Sensitive context, private bounded expiring export, access audited      |
+
+No wildcard/all-tenant, audit-edit, role-assignment, impersonation, secret-read,
+raw SQL or generic booking/payment override exists. Platform-area scope cannot
+select tenant records. Audit append uses a trusted internal writer contract, not
+an interactive permission. See [centralized admin architecture](../architecture/centralized-admin.md).
+
+## Earlier scope-specific capabilities
+
 Phase 5 adds these proposed capabilities; all existing scope/ownership/MFA checks
 still apply. No running authorization handler is introduced.
 

@@ -1,5 +1,7 @@
 # Proposed data dictionary
 
+Phases 6 and 7 extend the proposal as listed below. No migration or connection ran.
+
 All tables and business relationships are proposed. See [decisions and open
 questions](../../src/db/README.md). Names below are physical PostgreSQL names.
 **Required** means NOT NULL. A dash in the default column means no default.
@@ -116,17 +118,17 @@ CHECKs: nonnegative non-NaN price and currency pattern. No inventory is modeled.
 
 ## Bookings: bookings
 
-| Column           | Type          | Required | Default | Meaning                                                            |
-| ---------------- | ------------- | -------- | ------- | ------------------------------------------------------------------ |
-| organization_id  | uuid          | yes      | —       | Tenant scope                                                       |
-| store_id         | uuid          | yes      | —       | One booking store                                                  |
-| customer_user_id | uuid FK       | yes      | —       | Global users.id; customer need not be a tenant member              |
-| deal_id          | uuid          | no       | —       | Optional organization-wide deal                                    |
-| status           | text          | yes      | pending | pending / confirmed / completed / cancelled                        |
-| starts_at        | timestamptz   | yes      | —       | Scheduled booking start instant                                    |
-| ends_at          | timestamptz   | yes      | —       | Scheduled end, strictly after start                                |
-| total_amount     | numeric(14,2) | yes      | —       | Nonnegative finite payable total snapshot; reconciliation deferred |
-| currency         | char(3)       | yes      | —       | Currency inherited by item prices and enforced for payments        |
+| Column           | Type          | Required | Default | Meaning                                                                       |
+| ---------------- | ------------- | -------- | ------- | ----------------------------------------------------------------------------- |
+| organization_id  | uuid          | yes      | —       | Tenant scope                                                                  |
+| store_id         | uuid          | yes      | —       | One booking store                                                             |
+| customer_user_id | uuid FK       | yes      | —       | Global users.id; customer need not be a tenant member                         |
+| deal_id          | uuid          | no       | —       | Optional organization-wide deal                                               |
+| status           | text          | yes      | pending | pending / confirmed / in_progress / completed / cancelled / expired / no_show |
+| starts_at        | timestamptz   | yes      | —       | Scheduled booking start instant                                               |
+| ends_at          | timestamptz   | yes      | —       | Scheduled end, strictly after start                                           |
+| total_amount     | numeric(14,2) | yes      | —       | Nonnegative finite payable total snapshot; reconciliation deferred            |
+| currency         | char(3)       | yes      | —       | Currency inherited by item prices and enforced for payments                   |
 
 FKs: customer to users; `(organization_id,store_id)` to stores `(organization_id,id)`;
 `(organization_id,deal_id)` to deals `(organization_id,id)`.
@@ -176,20 +178,20 @@ No redemption or eligibility table exists.
 
 ## Commerce: payments
 
-| Column              | Type          | Required | Default | Meaning                                                  |
-| ------------------- | ------------- | -------- | ------- | -------------------------------------------------------- |
-| organization_id     | uuid          | yes      | —       | Tenant scope                                             |
-| booking_id          | uuid          | yes      | —       | Booking being paid                                       |
-| amount              | numeric(14,2) | yes      | —       | Positive finite payment attempt amount                   |
-| currency            | char(3)       | yes      | —       | Must match referenced booking currency                   |
-| status              | text          | yes      | pending | pending / succeeded / failed / cancelled                 |
-| provider            | varchar(64)   | yes      | —       | Proposed provider namespace                              |
-| provider_payment_id | text          | no       | —       | External reference once assigned, never card credentials |
-| idempotency_key     | varchar(128)  | yes      | —       | Tenant-local unique request key                          |
+| Column              | Type          | Required | Default    | Meaning                                                  |
+| ------------------- | ------------- | -------- | ---------- | -------------------------------------------------------- |
+| organization_id     | uuid          | yes      | —          | Tenant scope                                             |
+| booking_id          | uuid          | yes      | —          | Booking being paid                                       |
+| amount              | numeric(14,2) | yes      | —          | Positive finite payment attempt amount                   |
+| currency            | char(3)       | yes      | —          | Must match referenced booking currency                   |
+| status              | text          | yes      | initiating | initiating / pending / succeeded / failed / cancelled    |
+| provider            | varchar(64)   | yes      | —          | Proposed provider namespace                              |
+| provider_payment_id | text          | no       | —          | External reference once assigned, never card credentials |
+| idempotency_key     | varchar(128)  | yes      | —          | Tenant-local unique request key                          |
 
 FK: `(organization_id,booking_id,currency)` to bookings `(organization_id,id,currency)`.
 Index: the FK column tuple. Unique: `(organization_id,idempotency_key)` and
-`(provider,provider_payment_id)`. PostgreSQL permits multiple NULL provider
+`(provider,provider_account_ref,provider_payment_id)`. PostgreSQL permits multiple NULL provider
 references. CHECKs enforce positive non-NaN amount, currency shape, and status.
 
 ## Audit: audit_logs
@@ -208,3 +210,87 @@ Uses shared `id` and `created_at`, with no `updated_at` or soft deletion.
 Indexes: `(organization_id,created_at)`, `(actor_user_id,created_at)`,
 `(organization_id,subject_type,subject_id)`. Append-only behavior, tenant/platform
 event shape, metadata object validation, grants, and retention are not enforced yet.
+
+## Phase 6: booking extensions
+
+| Table.column                 | Type         | Required      | Default | Meaning                                                                                  |
+| ---------------------------- | ------------ | ------------- | ------- | ---------------------------------------------------------------------------------------- |
+| bookings.hold_expires_at     | timestamptz  | while pending | none    | Pending requires a deadline after created_at; elapsed-time transitions are not automatic |
+| bookings.revision            | integer      | yes           | 1       | Positive optimistic version                                                              |
+| bookings.idempotency_key     | varchar(128) | yes           | none    | Nonempty key unique per customer                                                         |
+| bookings.request_fingerprint | varchar(64)  | yes           | none    | Lowercase 64-hex server-generated normalized request digest                              |
+| bookings.policy_snapshot     | jsonb        | yes           | none    | JSON object; typed policy/version validation is a future application responsibility      |
+| booking_items.starts_at      | timestamptz  | service only  | none    | Per-service UTC start snapshot; NULL for product                                         |
+| booking_items.ends_at        | timestamptz  | service only  | none    | Service end must follow start; NULL for product                                          |
+
+Booking states now include in_progress, expired and no_show. New unique constraints:
+bookings `(customer_user_id,idempotency_key)` and
+`(organization_id,store_id,id,customer_user_id)`; items
+`(organization_id,store_id,booking_id,id)`. New indexes: bookings
+`(status,hold_expires_at)` and items `(organization_id,store_id,staff_id,starts_at,ends_at)`.
+CHECKs cover revision, request shape, policy object and service/product timing shape.
+These do not enforce overlap, header containment, capacity or cross-row lifecycle.
+
+## Identity: customer_profiles
+
+Uses shared UUID id and created_at/updated_at conventions. It is global per user,
+not tenant-owned. Domain profile revision is now stored as a positive integer.
+
+| Column       | Type    | Required | Default | Meaning                                                          |
+| ------------ | ------- | -------- | ------- | ---------------------------------------------------------------- |
+| user_id      | uuid FK | yes      | none    | users.id; unique one profile per user                            |
+| display_name | text    | yes      | none    | Customer display profile; precedence over user label is proposed |
+| locale       | text    | yes      | none    | Future validated locale                                          |
+| timezone     | text    | no       | none    | Future validated IANA timezone                                   |
+| revision     | integer | yes      | 1       | Positive optimistic version                                      |
+
+## Customers: favorites
+
+Uses shared id and timestamps; no soft-delete field. Unfavorite semantics are a
+future authorized mutation, not an implemented delete.
+
+| Column           | Type    | Required | Meaning                        |
+| ---------------- | ------- | -------- | ------------------------------ |
+| customer_user_id | uuid FK | yes      | users.id, derived from session |
+| organization_id  | uuid    | yes      | Store tenant                   |
+| store_id         | uuid    | yes      | Referenced store               |
+
+Composite FK `(organization_id,store_id)` -> stores `(organization_id,id)`;
+unique `(customer_user_id,organization_id,store_id)`; index `(organization_id,store_id)`.
+
+## Customers: reviews
+
+Uses shared id and timestamps. Exactly zero or one review per booking is proposed.
+
+| Column           | Type    | Required | Default | Meaning                                    |
+| ---------------- | ------- | -------- | ------- | ------------------------------------------ |
+| organization_id  | uuid    | yes      | none    | Booking tenant                             |
+| store_id         | uuid    | yes      | none    | Booking store                              |
+| booking_id       | uuid    | yes      | none    | Reviewed booking                           |
+| customer_user_id | uuid    | yes      | none    | Must match booking customer                |
+| rating           | integer | yes      | none    | CHECK between 1 and 5                      |
+| body             | text    | yes      | none    | CHECK trimmed length 1–5000                |
+| status           | text    | yes      | pending | CHECK pending/published/rejected/withdrawn |
+
+FK `(organization_id,store_id,booking_id,customer_user_id)` -> bookings
+`(organization_id,store_id,id,customer_user_id)`, with supporting index.
+Unique `(organization_id,booking_id)` and index `(organization_id,store_id,created_at)`.
+Completion eligibility and author authorization are future checks, not FK behavior.
+
+## Phase 7: payment extensions
+
+Payment status defaults to initiating; initiating/pending/succeeded/failed/cancelled
+are allowed. Refund summaries do not modify charge status.
+
+| Column               | Type         | Required | Default | Meaning                                                               |
+| -------------------- | ------------ | -------- | ------- | --------------------------------------------------------------------- |
+| provider_account_ref | varchar(128) | yes      | none    | Logical account namespace, not a credential                           |
+| refund_status        | text         | yes      | none    | none/pending/partially_refunded/refunded/failed; default literal none |
+| request_fingerprint  | varchar(64)  | yes      | none    | CHECK lowercase 64-hex normalized request digest                      |
+| revision             | integer      | yes      | 1       | CHECK positive                                                        |
+
+Provider references are unique on `(provider,provider_account_ref,provider_payment_id)`.
+The existing tenant-local idempotency key remains unique. Refund reservations,
+remaining refundable balance, webhook inbox, delivery attempts and transactional
+event outbox are not represented by tables yet. No schema implies exactly-once
+provider execution. Negotiation and messaging storage also remain undecided.

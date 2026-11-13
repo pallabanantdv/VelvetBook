@@ -59,8 +59,10 @@ but casts/JSON cannot establish trust; future adapters must validate server stat
 
 Server Actions, Route Handlers, jobs, uploads, webhooks, and internal callers must
 cross an equivalent trusted boundary. They must not bypass checks by invoking an
-application port directly. Service actors/webhook verification are not modeled
-yet: such operations stay unsupported until explicit contracts and permissions exist.
+application port directly. Provider verification has Phase 7 contracts, but no
+verifier or service-actor authorization implementation exists. Worker/webhook
+effects stay unsupported until actor permissions and trusted context construction
+are reviewed.
 
 ## Customers, collections, and creation
 

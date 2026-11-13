@@ -13,6 +13,14 @@ feature entities, policies, DTOs, and repository contracts stay in their module.
   generic interface is not a second enforcement mechanism.
 - `abstractions.ts`: clock and identifier-generation ports, without implementations.
 - `money.ts`: proposed string-decimal money shape; no calculations or validation.
+- `time.ts`: proposed half-open UTC range shape; no date arithmetic.
+- `request-context.ts`, `logging.ts`, `observability.ts`: diagnostic identifiers,
+  structured logging and bounded telemetry ports, without sinks or SDKs.
+- `validation.ts`, `pagination.ts`: input validation and cursor-page contracts.
+- `transactions.ts`: tenant/platform transaction scope and opaque participation proof.
+- `health.ts`: internal liveness/readiness and bounded probe contracts, without routes.
+- `integrations.ts`: opaque server-derived integration context and sanitized
+  failure vocabulary; no credential reader, retry loop or runtime implementation.
 
 Use direct `import type` imports. Core imports only core, never Next.js, Zod,
 Drizzle, Node APIs, or features. These pure contracts need no server-only marker.

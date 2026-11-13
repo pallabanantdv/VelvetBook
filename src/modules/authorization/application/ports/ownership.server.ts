@@ -14,6 +14,10 @@ import type { TenantContext, PlatformContext } from "../contexts";
 declare const verifiedOwnership: unique symbol;
 
 export type ResourceKind =
+  | "admin"
+  | "moderation"
+  | "report"
+  | "platform_setting"
   | "discovery"
   | "availability"
   | "favorite"

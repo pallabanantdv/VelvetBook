@@ -10,10 +10,13 @@
     "typecheck": "next typegen && tsc --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "test": "node tooling/test/run.mjs",
     "test:architecture": "node --test tooling/eslint/architecture.test.mjs",
     "db:check": "node --conditions=react-server --import tsx --test src/tests/db-schema.test.ts",
     "test:security": "node --conditions=react-server --import tsx --test src/tests/security-architecture.test.ts",
-    "test:partner-contracts": "node --conditions=react-server --import tsx --test src/tests/partner-contracts.test.ts"
+    "test:partner-contracts": "node --conditions=react-server --import tsx --test src/tests/partner-contracts.test.ts",
+    "test:integrations": "node --conditions=react-server --import tsx --test src/tests/integration-contracts.test.ts",
+    "test:admin-contracts": "node --conditions=react-server --import tsx --test src/tests/admin-contracts.test.ts"
   },
   "engines": {
     "node": ">=20.9.0"

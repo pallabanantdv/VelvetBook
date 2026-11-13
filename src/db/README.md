@@ -1,5 +1,12 @@
 # PostgreSQL architecture — proposed
 
+Phases 6/7 add customer profiles, favorites and reviews, booking lifecycle/hold/
+request fields and item timing, and payment account/refund-summary fields. See
+the [current dictionary](../../../docs/database/data-dictionary.md),
+[booking concurrency proposal](../../../docs/architecture/customer-booking-modules.md),
+and [integration storage gaps](../../../docs/architecture/external-integrations.md).
+No migration, query or connection has been executed.
+
 This phase declares a reviewable schema, not a live database. No PostgreSQL
 client, pool, connection, repository, migration, seed, or API exists. `pg` is
 installed for the future Node.js adapter but is not imported or instantiated.
@@ -8,7 +15,7 @@ The schema is a proposal and must be reviewed before any migration is generated.
 ## Layout and ownership
 
 `schema/` groups storage definitions by owning domain: `identity`,
-`organizations`, `catalog`, `bookings`, `commerce`, and `audit`. These are storage
+`organizations`, `catalog`, `bookings`, `commerce`, `customers`, and `audit`. These are storage
 namespaces, not a requirement to create six feature modules. Domain/application
 code never imports Drizzle schemas or inferred database row types. Future owning
 module infrastructure maps persistence records to domain/application contracts.
@@ -88,7 +95,7 @@ Every relationship below is proposed, not a settled business requirement.
 | Line name, price, and duration are snapshots; line currency is inherited from booking                                              | Preventing cross-currency catalog selection, total reconciliation, taxes, rounding, edits after confirmation               |
 | One optional organization-wide deal per booking; percentage or fixed amount                                                        | Eligibility, store scope, stacking, redemption limits, booking/fixed-deal currency match, immutable discount snapshots     |
 | Multiple payment attempts per booking, matching its tenant and currency                                                            | Partial capture, refunds, settlement, ledger, provider-account namespace, webhook lifecycle and overpayment prevention     |
-| Provider payment reference is unique per provider; request idempotency unique per organization                                     | Whether provider references are only unique per merchant account and how retries are scoped                                |
+| Provider payment reference is unique per provider + account + payment ID; request idempotency unique per organization              | Authoritative account-to-tenant mapping, request fingerprint semantics and retry retention                                 |
 | Audit actor is an optional global user; subject is a polymorphic UUID reference without an FK                                      | System/service actors, actor snapshotting, subject integrity, payload allowlist/redaction, retention and tamper resistance |
 
 Row checks enforce simple numeric, status, and relationship shape rules. They do
