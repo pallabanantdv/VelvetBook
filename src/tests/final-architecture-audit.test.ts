@@ -18,15 +18,17 @@ const sourceFiles = files(path.join(root, "src")).filter(
     /\.[cm]?[jt]sx?$/.test(file) &&
     !file.includes(`${path.sep}tests${path.sep}`),
 );
-test("architecture-only scope has no authored API routes, actions, DB driver imports or network calls", () => {
+test("only authentication routes and identity/security implementations are enabled", () => {
   for (const file of sourceFiles) {
     const relative = path.relative(root, file).replaceAll(path.sep, "/");
-    assert.equal(/(^|\/)route\.[cm]?[jt]sx?$/.test(relative), false, relative);
-    assert.equal(
-      /^src\/(pages\/api|app\/api)\//.test(relative),
-      false,
-      relative,
-    );
+    if (
+      /(^|\/)route\.[cm]?[jt]sx?$/.test(relative) ||
+      /^src\/(pages\/api|app\/api)\//.test(relative)
+    )
+      assert.match(
+        relative,
+        /^src\/app\/api\/v1\/auth\/(register|login|logout|me|password-reset\/(request|complete)|mfa\/(enroll|verify))\/route\.ts$/,
+      );
     const ast = ts.createSourceFile(
       file,
       fs.readFileSync(file, "utf8"),
@@ -40,15 +42,23 @@ test("architecture-only scope has no authored API routes, actions, DB driver imp
         ts.isImportDeclaration(node) &&
         ts.isStringLiteral(node.moduleSpecifier)
       ) {
-        assert.equal(
+        const databaseAdapter =
+          relative === "src/db/client.server.ts" ||
+          relative === "src/db/migrations.server.ts";
+        const restrictedImport =
           /^(pg($|\/)|postgres($|\/)|drizzle-orm\/(node-postgres|postgres-js)|node:(https?|net|tls)$)/.test(
             node.moduleSpecifier.text,
-          ),
-          false,
-          relative,
-        );
+          );
+        assert.ok(!restrictedImport || databaseAdapter, relative);
       }
-      if (ts.isCallExpression(node)) {
+      if (
+        ts.isCallExpression(node) &&
+        !relative.startsWith("src/db/") &&
+        !relative.startsWith("src/infrastructure/authentication/") &&
+        !/^src\/modules\/(identity|authorization)\/infrastructure\//.test(
+          relative,
+        )
+      ) {
         assert.equal(
           node.expression.getText(ast) === "fetch" ||
             /\.(connect|query|execute)$/.test(node.expression.getText(ast)),
@@ -58,6 +68,7 @@ test("architecture-only scope has no authored API routes, actions, DB driver imp
       }
       if (
         relative.startsWith("src/modules/") &&
+        !/^src\/modules\/(identity|authorization)\//.test(relative) &&
         !relative.endsWith("/presentation/validation.server.ts")
       ) {
         assert.equal(

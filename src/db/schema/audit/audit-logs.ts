@@ -1,7 +1,9 @@
 import "server-only";
+import { sql } from "drizzle-orm";
 
 import {
   index,
+  check,
   jsonb,
   pgTable,
   text,
@@ -34,6 +36,14 @@ export const auditLogs = pgTable(
       .notNull(),
   },
   (t) => [
+    check(
+      "audit_metadata_object_check",
+      sql`jsonb_typeof(${t.metadata}) = 'object'`,
+    ),
+    check(
+      "audit_labels_check",
+      sql`length(btrim(${t.action})) > 0 and length(btrim(${t.subjectType})) > 0`,
+    ),
     index("audit_org_created_idx").on(t.organizationId, t.createdAt),
     index("audit_actor_created_idx").on(t.actorUserId, t.createdAt),
     index("audit_subject_idx").on(t.organizationId, t.subjectType, t.subjectId),

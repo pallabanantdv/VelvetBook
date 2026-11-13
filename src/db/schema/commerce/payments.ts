@@ -49,6 +49,14 @@ export const payments = pgTable(
     ...timestamps(),
   },
   (t) => [
+    check(
+      "payments_request_check",
+      sql`length(btrim(${t.idempotencyKey})) > 0`,
+    ),
+    check(
+      "payments_provider_check",
+      sql`length(btrim(${t.provider})) > 0 and length(btrim(${t.providerAccountRef})) > 0 and (${t.providerPaymentId} is null or length(btrim(${t.providerPaymentId})) > 0)`,
+    ),
     check("payments_revision_check", sql`${t.revision} > 0`),
     check(
       "payments_fingerprint_check",

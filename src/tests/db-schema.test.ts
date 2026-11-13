@@ -26,6 +26,13 @@ const expectedTables = [
   "customer_profiles",
   "favorites",
   "reviews",
+  "auth_credentials",
+  "auth_sessions",
+  "auth_password_resets",
+  "auth_reset_deliveries",
+  "auth_rate_limits",
+  "auth_mfa",
+  "platform_grants",
 ];
 
 test("physical Mermaid ERD names match the proposed schema inventory", () => {
@@ -129,7 +136,19 @@ test("foreign keys have matching types and reference existing complete unique ke
 
 test("tenant/store foreign keys cannot reference another tenant or store", () => {
   for (const table of tables) {
-    if (!["users", "customer_profiles"].includes(table.name)) {
+    if (
+      ![
+        "users",
+        "customer_profiles",
+        "auth_credentials",
+        "auth_sessions",
+        "auth_password_resets",
+        "auth_reset_deliveries",
+        "auth_rate_limits",
+        "auth_mfa",
+        "platform_grants",
+      ].includes(table.name)
+    ) {
       const tenant = table.columns.find((c) => c.name === "organization_id");
       if (table.name !== "organizations") assert.ok(tenant, table.name);
       if (tenant && table.name !== "audit_logs")

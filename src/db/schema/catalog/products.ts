@@ -5,6 +5,7 @@ import {
   char,
   check,
   foreignKey,
+  integer,
   numeric,
   pgTable,
   text,
@@ -23,6 +24,7 @@ export const products = pgTable(
     organizationId: uuid("organization_id").notNull(),
     storeId: uuid("store_id").notNull(),
     sku: varchar("sku", { length: 100 }).notNull(),
+    revision: integer("revision").default(1).notNull(),
     name: text("name").notNull(),
     description: text("description"),
     price: numeric("price", { precision: 14, scale: 2 }).notNull(),
@@ -31,6 +33,8 @@ export const products = pgTable(
     ...timestamps(),
   },
   (t) => [
+    check("products_revision_check", sql`${t.revision} > 0`),
+    check("products_sku_check", sql`length(btrim(${t.sku})) > 0`),
     unique("products_org_store_id_unique").on(
       t.organizationId,
       t.storeId,

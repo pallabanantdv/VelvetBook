@@ -1,6 +1,7 @@
-export type { CustomerProfile } from "../domain/entities/model";
+export type { CustomerProfile, CustomerPreferences } from "../domain/entities/model";
 export type {
   CustomerProfileInputDto,
+  CustomerProfilePatchDto,
   CustomerProfileDto,
 } from "./dtos/contracts";
 export type {

@@ -5,6 +5,7 @@ import type { CustomerOperationContext } from "@/modules/authorization/applicati
 import type { CustomerProfile } from "../../domain/entities/model";
 import type {
   CustomerProfileInputDto,
+  CustomerProfilePatchDto,
   CustomerProfileDto,
 } from "../dtos/contracts";
 
@@ -18,17 +19,19 @@ export type FeatureFailure = ApplicationError<
 export interface CustomerProfileRepository {
   findSelf(
     context: CustomerOperationContext,
-  ): Promise<Result<CustomerProfile | null, RepositoryFailure>>;
+  ): Promise<Result<CustomerProfile | null, ProfileRepositoryFailure>>;
   saveSelf(input: {
     readonly context: CustomerOperationContext;
     readonly profile: CustomerProfile;
     readonly expectedRevision: number | null;
-  }): Promise<Result<CustomerProfile, RepositoryFailure>>;
+  }): Promise<Result<CustomerProfile, ProfileRepositoryFailure>>;
 }
+export type ProfileRepositoryFailure = RepositoryFailure | ApplicationError<"access_denied">;
 export interface CustomerProfilePort {
+  readSelf(context: CustomerOperationContext): Promise<Result<CustomerProfileDto | null, FeatureFailure>>;
   updateSelf(input: {
     readonly context: CustomerOperationContext;
     readonly expectedRevision: number;
-    readonly profile: CustomerProfileInputDto;
+    readonly profile: CustomerProfilePatchDto;
   }): Promise<Result<CustomerProfileDto, FeatureFailure>>;
 }

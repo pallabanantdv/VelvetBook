@@ -1,13 +1,36 @@
-# Proposed data dictionary
+# PostgreSQL data dictionary
 
-Phases 6 and 7 extend the proposal as listed below. No migration or connection ran.
+The initial migration is drizzle/0000_database_foundation.sql. Phase 1 database
+infrastructure is implemented; live PostgreSQL validation is pending. No existing
+database was changed. See [setup/workflow](development-setup.md).
 
-All tables and business relationships are proposed. See [decisions and open
+The physical model is finalized for initial migration review; unresolved business
+relationships remain proposed. See [decisions and open
 questions](../../src/db/README.md). Names below are physical PostgreSQL names.
 **Required** means NOT NULL. A dash in the default column means no default.
 All FK deletes are RESTRICT; IDs are immutable by convention.
 
 ## Shared columns
+
+Phase 1 also persists revision (integer, NOT NULL, default 1, CHECK > 0) on
+organizations, stores, staff, services and products, matching existing domain
+contracts. customer_profiles, bookings and payments already have this column.
+No trigger increments revisions or updates updated_at: future repository writes
+must use compare-and-swap and set both explicitly.
+
+New named checks: organizations_revision_check, stores_revision_check,
+staff_revision_check, services_revision_check, products_revision_check,
+stores_slug_check, stores_timezone_check, products_sku_check,
+payments_request_check, payments_provider_check, audit_metadata_object_check and
+audit_labels_check. Product SKU and payment idempotency/provider/account labels
+must be nonblank; a non-null provider_payment_id must also be nonblank. Existing
+primary/unique/foreign keys and supporting indexes were reviewed and preserved;
+no redundant key or FK to a polymorphic audit subject was added.
+
+Migration metadata lives separately in drizzle.__drizzle_migrations with id serial
+primary key, hash text NOT NULL and created_at bigint (migration order timestamp).
+It is managed by Drizzle and intentionally excluded from the 15 business-table
+exports/ERD. Execution verifies its history against checked-in hashes.
 
 Every table has the first two columns. All except `audit_logs` have `updated_at`.
 
@@ -66,7 +89,8 @@ or a future membership-history model.
 | archived_at     | timestamptz  | no       | —       | Operational retirement without deleting history    |
 
 Unique: `(organization_id,id)` and `(organization_id,slug)`. Store slug is
-case-sensitive; unlike organization slug its shape is not constrained yet.
+case-sensitive with lowercase alphanumeric segments separated by single hyphens.
+Timezone must be nonblank; IANA validity remains application policy.
 
 ## Organizations: staff
 
@@ -209,7 +233,8 @@ Uses shared `id` and `created_at`, with no `updated_at` or soft deletion.
 
 Indexes: `(organization_id,created_at)`, `(actor_user_id,created_at)`,
 `(organization_id,subject_type,subject_id)`. Append-only behavior, tenant/platform
-event shape, metadata object validation, grants, and retention are not enforced yet.
+event shape, grants, and retention are not enforced yet. Metadata must be a JSON
+object; action/subject_type must be nonblank. This is not a metadata allowlist.
 
 ## Phase 6: booking extensions
 
@@ -294,3 +319,161 @@ The existing tenant-local idempotency key remains unique. Refund reservations,
 remaining refundable balance, webhook inbox, delivery attempts and transactional
 event outbox are not represented by tables yet. No schema implies exactly-once
 provider execution. Negotiation and messaging storage also remain undecided.
+
+## Phase 2 identity and authorization
+
+Migration 0001_authentication_and_grants adds seven global tables and nullable
+users.email_verified_at (timestamptz, no default). Public registration never
+creates organization memberships or platform grants. Existing users receive no
+credentials, verified status or privileges from migration.
+
+### auth_credentials
+
+| Column        | Type                     | Required | Default           |
+| ------------- | ------------------------ | -------- | ----------------- |
+| id            | uuid                     | yes      | gen_random_uuid() |
+| user_id       | uuid                     | yes      | none              |
+| password_hash | text                     | yes      | none              |
+| created_at    | timestamp with time zone | yes      | now()             |
+| updated_at    | timestamp with time zone | yes      | now()             |
+
+FK (user_id) to users (id), RESTRICT.
+
+Unique: credentials_user_unique (user_id).
+
+### auth_mfa
+
+| Column             | Type                     | Required | Default           |
+| ------------------ | ------------------------ | -------- | ----------------- |
+| id                 | uuid                     | yes      | gen_random_uuid() |
+| user_id            | uuid                     | yes      | none              |
+| sealed_secret      | text                     | yes      | none              |
+| confirmed          | boolean                  | yes      | false             |
+| last_accepted_step | integer                  | yes      | 0                 |
+| created_at         | timestamp with time zone | yes      | now()             |
+| updated_at         | timestamp with time zone | yes      | now()             |
+
+FK (user_id) to users (id), RESTRICT.
+
+Unique: mfa_user_unique (user_id).
+
+CHECK: mfa_step_check.
+
+### auth_password_resets
+
+| Column      | Type                     | Required | Default           |
+| ----------- | ------------------------ | -------- | ----------------- |
+| id          | uuid                     | yes      | gen_random_uuid() |
+| user_id     | uuid                     | yes      | none              |
+| token_hash  | text                     | yes      | none              |
+| expires_at  | timestamp with time zone | yes      | none              |
+| consumed_at | timestamp with time zone | no       | none              |
+| created_at  | timestamp with time zone | yes      | now()             |
+| updated_at  | timestamp with time zone | yes      | now()             |
+
+FK (user_id) to users (id), RESTRICT.
+
+Unique: resets_token_unique (token_hash).
+
+Index: resets_user_idx.
+
+Index: resets_expiry_idx.
+
+CHECK: resets_hash_check.
+
+CHECK: resets_expiry_check.
+
+### auth_rate_limits
+
+| Column            | Type                     | Required | Default           |
+| ----------------- | ------------------------ | -------- | ----------------- |
+| id                | uuid                     | yes      | gen_random_uuid() |
+| bucket_key        | text                     | yes      | none              |
+| window_started_at | timestamp with time zone | yes      | none              |
+| hits              | integer                  | yes      | 1                 |
+| created_at        | timestamp with time zone | yes      | now()             |
+| updated_at        | timestamp with time zone | yes      | now()             |
+
+Unique: rate_bucket_unique (bucket_key).
+
+Index: rate_window_idx.
+
+CHECK: rate_hits_check.
+
+### auth_reset_deliveries
+
+| Column       | Type                     | Required | Default           |
+| ------------ | ------------------------ | -------- | ----------------- |
+| id           | uuid                     | yes      | gen_random_uuid() |
+| reset_id     | uuid                     | yes      | none              |
+| sealed_proof | text                     | yes      | none              |
+| delivered_at | timestamp with time zone | no       | none              |
+| lease_until  | timestamp with time zone | no       | none              |
+| attempts     | integer                  | yes      | 0                 |
+| created_at   | timestamp with time zone | yes      | now()             |
+| updated_at   | timestamp with time zone | yes      | now()             |
+
+FK (reset_id) to auth_password_resets (id), RESTRICT.
+
+Unique: reset_delivery_unique (reset_id).
+
+Index: reset_delivery_pending_idx.
+
+CHECK: reset_delivery_attempts_check.
+
+### auth_sessions
+
+| Column          | Type                     | Required | Default           |
+| --------------- | ------------------------ | -------- | ----------------- |
+| id              | uuid                     | yes      | gen_random_uuid() |
+| user_id         | uuid                     | yes      | none              |
+| token_hash      | text                     | yes      | none              |
+| expires_at      | timestamp with time zone | yes      | none              |
+| revoked_at      | timestamp with time zone | no       | none              |
+| mfa_verified_at | timestamp with time zone | no       | none              |
+| created_at      | timestamp with time zone | yes      | now()             |
+| updated_at      | timestamp with time zone | yes      | now()             |
+
+FK (user_id) to users (id), RESTRICT.
+
+Unique: sessions_token_unique (token_hash).
+
+Index: sessions_user_idx.
+
+Index: sessions_expiry_idx.
+
+CHECK: sessions_hash_check.
+
+CHECK: sessions_expiry_check.
+
+### platform_grants
+
+| Column     | Type                     | Required | Default           |
+| ---------- | ------------------------ | -------- | ----------------- |
+| id         | uuid                     | yes      | gen_random_uuid() |
+| user_id    | uuid                     | yes      | none              |
+| role       | text                     | yes      | 'platform_admin'  |
+| status     | text                     | yes      | 'active'          |
+| created_at | timestamp with time zone | yes      | now()             |
+| updated_at | timestamp with time zone | yes      | now()             |
+
+FK (user_id) to users (id), RESTRICT.
+
+Unique: platform_grant_user_unique (user_id).
+
+CHECK: platform_grant_role_check.
+
+CHECK: platform_grant_status_check.
+
+Credential password_hash values are bcrypt cost 12, never plaintext. token_hash
+contains SHA-256 random proof digests. expires_at exceeds created_at; revoked_at
+and consumed_at are nullable. Session mfa_verified_at records server TOTP proof.
+auth_mfa holds encrypted sealed_secret; confirmed defaults false and nonnegative
+last_accepted_step defaults 0. No raw secret/proof is stored.
+
+Delivery sealed_proof is encrypted with distinct purpose and expiry. reset_id is
+unique; nonnegative attempts defaults 0. delivered_at and lease_until are nullable.
+Limiter bucket_key is an HMAC digest; hits defaults 1 and is positive.
+window_started_at controls expiry. platform_grants permits only platform_admin
+and active/revoked status; inserts require authorized internal provisioning.
+No automated retention deletion or grant provisioning is supplied.

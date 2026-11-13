@@ -1,7 +1,10 @@
 import "server-only";
+import { sql } from "drizzle-orm";
 
 import {
   foreignKey,
+  check,
+  integer,
   index,
   pgTable,
   timestamp,
@@ -20,10 +23,12 @@ export const staff = pgTable(
     organizationId: uuid("organization_id").notNull(),
     storeId: uuid("store_id").notNull(),
     organizationMemberId: uuid("organization_member_id").notNull(),
+    revision: integer("revision").default(1).notNull(),
     archivedAt: timestamp("archived_at", { withTimezone: true }),
     ...timestamps(),
   },
   (t) => [
+    check("staff_revision_check", sql`${t.revision} > 0`),
     unique("staff_org_store_id_unique").on(t.organizationId, t.storeId, t.id),
     unique("staff_store_member_unique").on(
       t.organizationId,

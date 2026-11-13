@@ -1,6 +1,6 @@
 import { defineConfig } from "drizzle-kit";
 
-// Schema-only configuration: intentionally no credentials or database client.
+// Generation is offline; execution uses the guarded tooling/database runner.
 export default defineConfig({
   dialect: "postgresql",
   schema: "./src/db/schema/index.ts",

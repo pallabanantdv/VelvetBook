@@ -13,6 +13,7 @@ velvet-book/
 ├── .prettierrc.json
 ├── AGENTS.md
 ├── README.md
+├── compose.database.yml
 ├── docs/
 │   ├── architecture/
 │   │   ├── architecture-decisions.md
@@ -34,14 +35,30 @@ velvet-book/
 │   │   ├── security-and-tenancy.md
 │   │   ├── shared-backend-infrastructure.md
 │   │   └── system-context.md
+│   ├── backend/
+│   │   ├── api-development-plan.md
+│   │   ├── authentication-setup.md
+│   │   ├── authentication-status.md
+│   │   ├── database-infrastructure-status.md
+│   │   ├── implementation-status.md
+│   │   └── openapi.json
 │   ├── database/
 │   │   ├── data-dictionary.md
+│   │   ├── development-setup.md
 │   │   └── erd.md
 │   ├── security/
 │   │   ├── architecture.md
+│   │   ├── authentication-decision.md
 │   │   ├── authorization-test-specifications.md
 │   │   └── permission-matrix.md
 │   └── testing-strategy.md
+├── drizzle/
+│   ├── 0000_database_foundation.sql
+│   ├── 0001_authentication_and_grants.sql
+│   └── meta/
+│       ├── 0000_snapshot.json
+│       ├── 0001_snapshot.json
+│       └── _journal.json
 ├── drizzle.config.ts
 ├── eslint.config.mjs
 ├── next.config.ts
@@ -55,12 +72,35 @@ velvet-book/
 │   └── window.svg
 ├── src/
 │   ├── app/
+│   │   ├── api/
+│   │   │   └── v1/
+│   │   │       └── auth/
+│   │   │           ├── login/
+│   │   │           │   └── route.ts
+│   │   │           ├── logout/
+│   │   │           │   └── route.ts
+│   │   │           ├── me/
+│   │   │           │   └── route.ts
+│   │   │           ├── mfa/
+│   │   │           │   ├── enroll/
+│   │   │           │   │   └── route.ts
+│   │   │           │   └── verify/
+│   │   │           │       └── route.ts
+│   │   │           ├── password-reset/
+│   │   │           │   ├── complete/
+│   │   │           │   │   └── route.ts
+│   │   │           │   └── request/
+│   │   │           │       └── route.ts
+│   │   │           └── register/
+│   │   │               └── route.ts
 │   │   ├── favicon.ico
 │   │   ├── globals.css
 │   │   ├── layout.tsx
 │   │   └── page.tsx
 │   ├── config/
 │   │   ├── .gitkeep
+│   │   ├── authentication.server.ts
+│   │   ├── database.server.ts
 │   │   └── environment.server.ts
 │   ├── core/
 │   │   ├── .gitkeep
@@ -83,6 +123,9 @@ velvet-book/
 │   ├── db/
 │   │   ├── .gitkeep
 │   │   ├── README.md
+│   │   ├── client.server.ts
+│   │   ├── health.server.ts
+│   │   ├── migrations.server.ts
 │   │   └── schema/
 │   │       ├── audit/
 │   │       │   └── audit-logs.ts
@@ -100,6 +143,7 @@ velvet-book/
 │   │       │   ├── favorites.ts
 │   │       │   └── reviews.ts
 │   │       ├── identity/
+│   │       │   ├── authentication.ts
 │   │       │   ├── customer-profiles.ts
 │   │       │   └── users.ts
 │   │       ├── index.ts
@@ -110,6 +154,10 @@ velvet-book/
 │   │           └── stores.ts
 │   ├── infrastructure/
 │   │   ├── .gitkeep
+│   │   ├── authentication/
+│   │   │   ├── reset-delivery.server.ts
+│   │   │   ├── routes.server.ts
+│   │   │   └── runtime.server.ts
 │   │   └── index.ts
 │   ├── modules/
 │   │   ├── .gitkeep
@@ -177,6 +225,7 @@ velvet-book/
 │   │   ├── authorization/
 │   │   │   ├── README.md
 │   │   │   ├── application/
+│   │   │   │   ├── access.server.ts
 │   │   │   │   ├── contexts.ts
 │   │   │   │   ├── operation-context.ts
 │   │   │   │   ├── policy/
@@ -191,6 +240,7 @@ velvet-book/
 │   │   │   │   ├── permissions.ts
 │   │   │   │   └── roles.ts
 │   │   │   ├── infrastructure/
+│   │   │   │   ├── access.server.ts
 │   │   │   │   └── index.ts
 │   │   │   └── presentation/
 │   │   │       └── contracts.ts
@@ -344,19 +394,25 @@ velvet-book/
 │   │   ├── identity/
 │   │   │   ├── README.md
 │   │   │   ├── application/
+│   │   │   │   ├── authentication.server.ts
 │   │   │   │   ├── ports/
 │   │   │   │   │   ├── authentication.server.ts
 │   │   │   │   │   ├── mfa.server.ts
 │   │   │   │   │   ├── password-reset.server.ts
+│   │   │   │   │   ├── runtime.server.ts
 │   │   │   │   │   └── session-validation.server.ts
 │   │   │   │   ├── public.ts
 │   │   │   │   └── session-context.ts
 │   │   │   ├── domain/
 │   │   │   │   └── identity.ts
 │   │   │   ├── infrastructure/
-│   │   │   │   └── index.ts
+│   │   │   │   ├── index.ts
+│   │   │   │   ├── postgres.server.ts
+│   │   │   │   ├── security.server.ts
+│   │   │   │   └── session-validation.server.ts
 │   │   │   └── presentation/
-│   │   │       └── contracts.ts
+│   │   │       ├── contracts.ts
+│   │   │       └── validation.server.ts
 │   │   ├── maps/
 │   │   │   ├── README.md
 │   │   │   ├── application/
@@ -693,17 +749,26 @@ velvet-book/
 │   ├── tests/
 │   │   ├── .gitkeep
 │   │   ├── admin-contracts.test.ts
+│   │   ├── authentication.test.ts
+│   │   ├── database-infrastructure.test.ts
 │   │   ├── db-schema.test.ts
 │   │   ├── final-architecture-audit.test.ts
+│   │   ├── integration/
+│   │   │   ├── authentication.integration.ts
+│   │   │   └── database.integration.ts
 │   │   ├── integration-contracts.test.ts
 │   │   ├── partner-contracts.test.ts
 │   │   ├── security-architecture.test.ts
-│   │   └── shared-infrastructure.test.ts
+│   │   ├── shared-infrastructure.test.ts
+│   │   └── support/
+│   │       └── memory-identity.ts
 │   └── types/
 │       └── .gitkeep
 ├── tooling/
 │   ├── architecture/
 │   │   └── inventory.mjs
+│   ├── database/
+│   │   └── cli.ts
 │   ├── eslint/
 │   │   ├── architecture.mjs
 │   │   ├── architecture.test.mjs

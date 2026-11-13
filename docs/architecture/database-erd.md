@@ -1,5 +1,12 @@
 # Database architecture and ERD
 
+Phase 1 update: the physical model now has a generated initial migration, a
+server-only pooled client and guarded execution tooling. Revisions on the five
+partner draft tables are persisted. See [current database status](../backend/database-infrastructure-status.md)
+and [setup/workflow](../database/development-setup.md). The proposal-era discussion
+below is historical where it describes these pieces as absent; live PostgreSQL
+verification remains pending and business invariants remain unresolved.
+
 There are 15 proposed tables, all in PostgreSQL public schema. Source domain
 directories are logical ownership groups, not separate database schemas. No SQL,
 migration, seed, connection, pool or RLS policy has been executed or installed.

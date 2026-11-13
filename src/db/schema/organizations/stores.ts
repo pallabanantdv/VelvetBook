@@ -1,7 +1,10 @@
 import "server-only";
+import { sql } from "drizzle-orm";
 
 import {
   pgTable,
+  check,
+  integer,
   text,
   timestamp,
   unique,
@@ -19,6 +22,7 @@ export const stores = pgTable(
       .notNull()
       .references(() => organizations.id, { onDelete: "restrict" }),
     name: text("name").notNull(),
+    revision: integer("revision").default(1).notNull(),
     slug: varchar("slug", { length: 100 }).notNull(),
     timezone: text("timezone").notNull(),
     address: text("address"),
@@ -26,6 +30,9 @@ export const stores = pgTable(
     ...timestamps(),
   },
   (t) => [
+    check("stores_revision_check", sql`${t.revision} > 0`),
+    check("stores_slug_check", sql`${t.slug} ~ '^[a-z0-9]+(-[a-z0-9]+)*$'`),
+    check("stores_timezone_check", sql`length(btrim(${t.timezone})) > 0`),
     unique("stores_org_id_unique").on(t.organizationId, t.id),
     unique("stores_org_slug_unique").on(t.organizationId, t.slug),
   ],

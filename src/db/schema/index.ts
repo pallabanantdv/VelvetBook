@@ -2,6 +2,15 @@ import "server-only";
 
 // One tooling entry point; internal FK imports always target a concrete file.
 export { users } from "./identity/users";
+export {
+  authCredentials,
+  authSessions,
+  authPasswordResets,
+  authResetDeliveries,
+  authRateLimits,
+  authMfa,
+  platformGrants,
+} from "./identity/authentication";
 export { customerProfiles } from "./identity/customer-profiles";
 export { favorites } from "./customers/favorites";
 export { reviews } from "./customers/reviews";

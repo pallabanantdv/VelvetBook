@@ -25,12 +25,14 @@ export const services = pgTable(
     name: text("name").notNull(),
     description: text("description"),
     durationMinutes: integer("duration_minutes").notNull(),
+    revision: integer("revision").default(1).notNull(),
     price: numeric("price", { precision: 14, scale: 2 }).notNull(),
     currency: char("currency", { length: 3 }).notNull(),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
     ...timestamps(),
   },
   (t) => [
+    check("services_revision_check", sql`${t.revision} > 0`),
     unique("services_org_store_id_unique").on(
       t.organizationId,
       t.storeId,

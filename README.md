@@ -1,5 +1,17 @@
 ﻿# VelvetBook
 
+Current phase: [central authentication and authorization](docs/backend/authentication-status.md)
+is implemented. See [auth setup](docs/backend/authentication-setup.md) and
+[OpenAPI](docs/backend/openapi.json). Email delivery awaits provider selection; live
+PostgreSQL verification is pending. Older phase/audit details below are historical.
+
+**Current backend phase:** PostgreSQL/Drizzle infrastructure now includes a lazy
+server-only pool, guarded migration tooling and internal health utility. See
+[database setup](docs/database/development-setup.md) and
+[Phase 1 status](docs/backend/database-infrastructure-status.md). Business services
+and APIs remain unimplemented. Architecture history below predates this phase;
+use the current database documents for connection/migration status.
+
 Next.js App Router, React, strict TypeScript, and npm. Existing UI, Tailwind,
 Next.js settings, and the `@/*` alias to `src/*` are preserved. Zod is available
 for future validation. PostgreSQL/Drizzle schema architecture is declared and proposed;

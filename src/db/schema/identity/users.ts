@@ -19,6 +19,7 @@ export const users = pgTable(
     email: varchar("email", { length: 254 }).notNull(),
     displayName: text("display_name").notNull(),
     disabledAt: timestamp("disabled_at", { withTimezone: true }),
+    emailVerifiedAt: timestamp("email_verified_at", { withTimezone: true }),
     ...timestamps(),
   },
   (t) => [

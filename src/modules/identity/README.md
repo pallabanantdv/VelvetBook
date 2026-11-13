@@ -1,5 +1,11 @@
 # Identity module
 
+Phase 2 runtime: application/authentication.server.ts implements orchestration
+through IdentityStore/IdentitySecurity ports. infrastructure contains bcrypt/iron/
+TOTP adapters, PostgreSQL persistence and the existing SessionValidationPort bridge.
+See [setup and limitations](../../../docs/backend/authentication-setup.md).
+Public cross-module imports remain types only; server composition wires implementations.
+
 Owner: identity/security maintainers (individual owner to be assigned).
 Owns canonical user identity, authentication-provider contracts, validated session
 context, password-reset and future MFA contracts. Authorization owns privileges;
@@ -21,10 +27,13 @@ automatically upgraded SessionContext.
 Password reset must avoid account enumeration, use single-use expiring proofs,
 throttle abuse, validate password policy, and revoke affected sessions. MFA must
 bind a challenge to the same session/user and purpose, expire it, consume it
-once, and reject replay. Enrollment, credential storage, provider selection,
-revocation storage, and recovery policy are open decisions.
+once, and reject replay. Current TOTP binds proof to the authenticated user/session
+and consumes accepted time steps. The older generic challenge/provider contracts
+remain future extension points; the runtime uses the concrete password/TOTP flow.
 
-No provider, session, cookie, JWT, hashing, reset delivery, MFA adapter, or login
-API is implemented. No identity persistence beyond the earlier users proposal
-has been added. See the [security architecture](../../../docs/security/architecture.md)
-and [future test specifications](../../../docs/security/authorization-test-specifications.md).
+Password/session/TOTP persistence and auth endpoints are implemented in Phase 2.
+Email transport selection is deferred by the user; reset delivery remains queued
+until an adapter is configured. Factor recovery, federation and privileged grant
+provisioning remain separately authorized future workflows. See the current
+[authentication setup](../../../docs/backend/authentication-setup.md) alongside the
+historical [security architecture](../../../docs/security/architecture.md).

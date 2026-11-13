@@ -1,16 +1,19 @@
-# PostgreSQL architecture — proposed
+# PostgreSQL database infrastructure
 
 Phases 6/7 add customer profiles, favorites and reviews, booking lifecycle/hold/
 request fields and item timing, and payment account/refund-summary fields. See
 the [current dictionary](../../../docs/database/data-dictionary.md),
 [booking concurrency proposal](../../../docs/architecture/customer-booking-modules.md),
 and [integration storage gaps](../../../docs/architecture/external-integrations.md).
-No migration, query or connection has been executed.
+Phase 1 infrastructure is implemented; live PostgreSQL validation remains pending.
+See [setup and safe migration workflow](../../../docs/database/development-setup.md)
+and [current status](../../../docs/backend/database-infrastructure-status.md).
 
-This phase declares a reviewable schema, not a live database. No PostgreSQL
-client, pool, connection, repository, migration, seed, or API exists. `pg` is
-installed for the future Node.js adapter but is not imported or instantiated.
-The schema is a proposal and must be reviewed before any migration is generated.
+client.server.ts provides a lazy reusable pg pool and typed Drizzle database.
+health.server.ts exposes an internal sanitized probe. migrations.server.ts checks
+additive SQL, explicit target/fingerprint and immutable history before execution.
+The initial migration is checked in under drizzle/. No existing database has been
+modified; business repositories/services, authentication, seeds and APIs are absent.
 
 ## Layout and ownership
 
@@ -40,13 +43,15 @@ serializer. It checks table inventory, UUID primary keys, foreign-key types and
 unique targets, tenant/store consistency, index coverage, identifier lengths,
 money precision, and critical checks. It writes no migration files and executes
 no SQL. It does not prove PostgreSQL accepts the DDL or validate query plans;
-database integration checks remain deferred until a connection is authorized.
+`npm run db:test` exercises an explicit disposable TEST_DATABASE_URL separately.
+It fails rather than silently skipping if that prerequisite is missing.
 
-`drizzle.config.ts` names PostgreSQL, the schema entry point, and a future output
+`drizzle.config.ts` names PostgreSQL, the schema entry point, and the migration output
 directory, but deliberately omits `dbCredentials`. It does not read environment
-variables. `DATABASE_URL` in `.env.example` remains empty. No connection, migrate,
-push, seed, or studio scripts are provided. Future tooling that loads the schema
-must retain the server condition used in `db:check`.
+variables. `DATABASE_URL` in .env.example remains empty. db:generate,
+db:migrate:plan, db:migrate, db:migrations:check and db:health are available;
+no push/reset/down/seed/studio commands are supplied. Offline TypeScript tools
+retain the react-server condition used in db:check.
 
 ## Conventions
 

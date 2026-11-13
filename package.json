@@ -16,14 +16,25 @@
     "test:security": "node --conditions=react-server --import tsx --test src/tests/security-architecture.test.ts",
     "test:partner-contracts": "node --conditions=react-server --import tsx --test src/tests/partner-contracts.test.ts",
     "test:integrations": "node --conditions=react-server --import tsx --test src/tests/integration-contracts.test.ts",
-    "test:admin-contracts": "node --conditions=react-server --import tsx --test src/tests/admin-contracts.test.ts"
+    "test:admin-contracts": "node --conditions=react-server --import tsx --test src/tests/admin-contracts.test.ts",
+    "db:generate": "node --conditions=react-server node_modules/drizzle-kit/bin.cjs generate --config=drizzle.config.ts",
+    "db:migrate:plan": "node --conditions=react-server --import tsx tooling/database/cli.ts plan",
+    "db:migrate": "node --conditions=react-server --import tsx tooling/database/cli.ts migrate",
+    "db:health": "node --conditions=react-server --import tsx tooling/database/cli.ts health",
+    "db:test": "node --conditions=react-server --import tsx --test --test-concurrency=1 src/tests/integration/database.integration.ts src/tests/integration/authentication.integration.ts",
+    "db:migrations:check": "node --conditions=react-server node_modules/drizzle-kit/bin.cjs check --config=drizzle.config.ts",
+    "auth:test:integration": "node --conditions=react-server --import tsx --test --test-concurrency=1 src/tests/integration/authentication.integration.ts"
   },
   "engines": {
     "node": ">=20.9.0"
   },
   "dependencies": {
+    "@next/env": "16.4.6",
+    "bcryptjs": "^3.0.3",
     "drizzle-orm": "^0.45.4",
+    "iron-session": "^9.1.0",
     "next": "16.4.6",
+    "otpauth": "^9.6.0",
     "pg": "^8.23.1",
     "react": "19.3.0",
     "react-dom": "19.3.0",

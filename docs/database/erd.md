@@ -1,7 +1,9 @@
-# Proposed PostgreSQL ERD
+# PostgreSQL physical ERD
 
-Every business relationship is proposed; review the [open questions](../../src/db/README.md)
-before adopting it. The diagram shows declared FKs, not a complete business model.
+Phase 1 includes an initial migration for these 15 tables. No existing database
+was changed; live PostgreSQL validation is pending. Review the
+[open questions](../../src/db/README.md) and [migration workflow](development-setup.md)
+before applying it. The diagram shows declared FKs, not a complete business model.
 See the [data dictionary](data-dictionary.md) for every column, default, check,
 unique constraint, and index. All mutable tables also have `created_at` and
 `updated_at`; audit rows have only `created_at`.
@@ -43,6 +45,7 @@ erDiagram
         varchar email UK "case-insensitive expression index"
         text display_name
         timestamptz disabled_at "nullable"
+        timestamptz email_verified_at "nullable"
     }
     customer_profiles {
         uuid id PK
@@ -70,6 +73,7 @@ erDiagram
     }
     organizations {
         uuid id PK
+        integer revision "positive, default 1"
         varchar slug UK
         text name
         text status
@@ -83,6 +87,7 @@ erDiagram
     }
     stores {
         uuid id PK
+        integer revision "positive, default 1"
         uuid organization_id FK
         varchar slug "unique within organization"
         text name
@@ -91,6 +96,7 @@ erDiagram
     }
     staff {
         uuid id PK
+        integer revision "positive, default 1"
         uuid organization_id FK
         uuid store_id FK
         uuid organization_member_id FK
@@ -98,6 +104,7 @@ erDiagram
     }
     services {
         uuid id PK
+        integer revision "positive, default 1"
         uuid organization_id FK
         uuid store_id FK
         text name
@@ -108,6 +115,7 @@ erDiagram
     }
     products {
         uuid id PK
+        integer revision "positive, default 1"
         uuid organization_id FK
         uuid store_id FK
         varchar sku "unique within store"
@@ -185,5 +193,82 @@ erDiagram
         uuid subject_id "nullable, polymorphic, no FK"
         jsonb metadata
         timestamptz created_at
+    }
+```
+
+## Phase 2 authentication storage
+
+Seven global authentication/grant tables extend the physical inventory to 22.
+users.email_verified_at is nullable timestamptz. No existing user is verified or
+privileged by migration. All auth tables have UUID id and created_at/updated_at.
+
+```mermaid
+erDiagram
+    users ||--o| auth_credentials : "restricted reference"
+    auth_credentials {
+        uuid id PK
+        uuid user_id
+        text password_hash
+        timestamptz created_at
+        timestamptz updated_at
+    }
+    users ||--o| auth_mfa : "restricted reference"
+    auth_mfa {
+        uuid id PK
+        uuid user_id
+        text sealed_secret
+        boolean confirmed
+        integer last_accepted_step
+        timestamptz created_at
+        timestamptz updated_at
+    }
+    users ||--o{ auth_password_resets : "restricted reference"
+    auth_password_resets {
+        uuid id PK
+        uuid user_id
+        text token_hash
+        timestamptz expires_at
+        timestamptz consumed_at
+        timestamptz created_at
+        timestamptz updated_at
+    }
+    auth_rate_limits {
+        uuid id PK
+        text bucket_key
+        timestamptz window_started_at
+        integer hits
+        timestamptz created_at
+        timestamptz updated_at
+    }
+    auth_password_resets ||--o| auth_reset_deliveries : "restricted reference"
+    auth_reset_deliveries {
+        uuid id PK
+        uuid reset_id
+        text sealed_proof
+        timestamptz delivered_at
+        timestamptz lease_until
+        integer attempts
+        timestamptz created_at
+        timestamptz updated_at
+    }
+    users ||--o{ auth_sessions : "restricted reference"
+    auth_sessions {
+        uuid id PK
+        uuid user_id
+        text token_hash
+        timestamptz expires_at
+        timestamptz revoked_at
+        timestamptz mfa_verified_at
+        timestamptz created_at
+        timestamptz updated_at
+    }
+    users ||--o| platform_grants : "restricted reference"
+    platform_grants {
+        uuid id PK
+        uuid user_id
+        text role
+        text status
+        timestamptz created_at
+        timestamptz updated_at
     }
 ```

@@ -1,5 +1,12 @@
 # Testing strategy
 
+Phase 1 database update: npm test includes offline database configuration/pool,
+migration guard/history safety and snapshot agreement checks. npm run db:test is
+a separate live PostgreSQL suite requiring an explicit disposable TEST_DATABASE_URL
+ending in _test. It fails if missing and never falls back to DATABASE_URL. See
+[database setup and test safety](database/development-setup.md). Existing business
+contract tests remain offline; they are not authentication or booking execution tests.
+
 `npm test` uses Node's built-in test runner and the existing tsx loader. The
 cross-platform discovery script explicitly finds all src/tests/**/\*.test.ts and
 tooling/eslint/**/*.test.mjs files, sorts them, and fails if none exist. Suites run

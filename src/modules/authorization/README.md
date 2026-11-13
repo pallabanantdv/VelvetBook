@@ -1,5 +1,11 @@
 # Authorization module
 
+Phase 2 runtime: application/access.server.ts evaluates the role bundles, and
+infrastructure/access.server.ts loads active sessions, memberships, targets,
+assignments and separate platform grants. These back the shared Route Handler
+helpers. Platform capability does not bypass sensitive admin scope/approval controls.
+See [setup and supported ownership paths](../../../docs/backend/authentication-setup.md).
+
 Owner: authorization/security maintainers (individual owner to be assigned).
 Owns scoped roles and permissions, membership contracts, verified tenant/platform
 contexts, ownership verification, and the authorization port. Identity is consumed
@@ -8,8 +14,8 @@ only local domain types and core identifiers.
 
 Public API: `application/public.ts`, types only. Static proposed permission bundles
 live in `application/policy/role-permissions.server.ts`. That file is server-only
-and is **not an authorization engine**. Infrastructure has an empty server-only
-entry point; no database access, grant loader, or decision handler exists.
+and is **not an authorization engine** by itself. The empty index entry point is
+preserved; concrete server adapters are imported explicitly by trusted composition.
 
 `TenantContext` requires an active membership for the authenticated user and an
 active organization. A platform admin has a separately resolved PlatformContext,
