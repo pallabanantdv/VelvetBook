@@ -15,6 +15,7 @@ export { customerProfiles } from "./identity/customer-profiles";
 export { favorites } from "./customers/favorites";
 export { reviews } from "./customers/reviews";
 export { organizations } from "./organizations/organizations";
+export { onboardingWorkflows, onboardingStores, onboardingEvidence, onboardingSubmissions, onboardingDecisions, onboardingRequests } from "./organizations/onboarding";
 export { organizationMembers } from "./organizations/organization-members";
 export { stores } from "./organizations/stores";
 export { staff } from "./organizations/staff";

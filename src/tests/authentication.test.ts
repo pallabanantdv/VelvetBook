@@ -35,7 +35,7 @@ test("OpenAPI lists every implemented auth endpoint with strict input schemas", 
     readFileSync("docs/backend/openapi.json", "utf8"),
   );
   assert.equal(document.openapi, "3.1.0");
-  assert.equal(Object.keys(document.paths).length, 8);
+  assert.equal(Object.keys(document.paths).filter((path) => path.startsWith("/api/v1/auth/")).length, 8);
   for (const [path, operations] of Object.entries(document.paths)) {
     assert.ok(existsSync(`src/app${path}/route.ts`));
     for (const operation of Object.values(

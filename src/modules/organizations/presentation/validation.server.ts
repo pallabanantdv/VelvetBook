@@ -11,3 +11,8 @@ export const organizationsDraftSchema = z.strictObject({
     .max(100)
     .regex(/^[a-z0-9]+(-[a-z0-9]+)*$/),
 }) satisfies z.ZodType<OrganizationDraftDto>;
+
+export const organizationDraftPatchSchema = z.strictObject({
+  ...organizationsDraftSchema.partial().shape,
+  expectedRevision: z.number().int().min(1).max(2147483646),
+}).refine((value) => value.name !== undefined || value.slug !== undefined, "An editable field is required.");

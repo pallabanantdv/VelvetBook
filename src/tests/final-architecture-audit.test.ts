@@ -27,7 +27,7 @@ test("only authentication routes and identity/security implementations are enabl
     )
       assert.match(
         relative,
-        /^src\/app\/api\/v1\/auth\/(register|login|logout|me|password-reset\/(request|complete)|mfa\/(enroll|verify))\/route\.ts$/,
+        /^src\/app\/api\/v1\/(auth\/(register|login|logout|me|password-reset\/(request|complete)|mfa\/(enroll|verify))|customer\/profile)\/route\.ts$/,
       );
     const ast = ts.createSourceFile(
       file,
@@ -68,7 +68,7 @@ test("only authentication routes and identity/security implementations are enabl
       }
       if (
         relative.startsWith("src/modules/") &&
-        !/^src\/modules\/(identity|authorization)\//.test(relative) &&
+        !/^src\/modules\/(identity|authorization|customers)\//.test(relative) &&
         !relative.endsWith("/presentation/validation.server.ts")
       ) {
         assert.equal(

@@ -4,7 +4,6 @@ import type { Result } from "@/core/results";
 import type { CustomerOperationContext } from "@/modules/authorization/application/public";
 import type { CustomerProfile } from "../../domain/entities/model";
 import type {
-  CustomerProfileInputDto,
   CustomerProfilePatchDto,
   CustomerProfileDto,
 } from "../dtos/contracts";

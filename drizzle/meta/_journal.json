@@ -15,6 +15,13 @@
       "when": 1794563675471,
       "tag": "0001_authentication_and_grants",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794576491610,
+      "tag": "0002_customer_profile_fields",
+      "breakpoints": true
     }
   ]
 }

@@ -12,7 +12,7 @@ export function assertAdditiveMigration(statement: string): void {
   const sql = statement.trim().replace(/;$/, "");
   if (!sql) return;
   const allowed =
-    /^(CREATE TABLE "[a-z_]+"\s*\(|CREATE (UNIQUE )?INDEX "[a-z_]+" ON |ALTER TABLE "[a-z_]+" ADD CONSTRAINT "[a-z_]+" (FOREIGN KEY|CHECK|UNIQUE)\s*\(|ALTER TABLE "[a-z_]+" ADD COLUMN "[a-z_]+" (timestamp with time zone|text|integer|boolean|uuid)\b)/i;
+    /^(CREATE TABLE "[a-z_]+"\s*\(|CREATE (UNIQUE )?INDEX "[a-z_]+" ON |ALTER TABLE "[a-z_]+" ADD CONSTRAINT "[a-z_]+" (FOREIGN KEY|CHECK|UNIQUE)\s*\(|ALTER TABLE "[a-z_]+" ADD COLUMN "[a-z_]+" (timestamp with time zone|text|integer|boolean|uuid|jsonb)\b)/i;
   const normalized = sql
     .replace(/ON DELETE RESTRICT/gi, "")
     .replace(/ON UPDATE NO ACTION/gi, "");
